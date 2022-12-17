@@ -1,9 +1,32 @@
+//Super keys with FD 
 Doctor_ID -> name , surname , age , gender , home_address , phone_number , ward_ID , Schedule-ID
-Patient_ID , Date_of_come -> date_of_out
 Nurse_ID -> name , surname , age , gender , home_address , phone_number , room_ID , Schedule-ID , ward_ID
-Patient_ID -> date_of_arrived
 Patient_ID ->  name , surname , age , gender , home_address , phone_number
-Room_ID -> ward_ID , num_of_beds
 Schedule_ID -> day , time_start , time_end
 Ward_ID -> Ward_name  , total of rooms , block
-Test_id -> diagnos , treatment , equipment , drug
+Test_id -> diagnos , equipment , drug , conclusion , patient_id
+diagnos_id -> diagnos_name , grug_name , treatment
+
+Hospital_name -> address
+(Out)Patient_ID -> date_of_arrived
+Room_ID -> ward_ID , num_of_beds
+Gos_nomer , date_of_out -> patient_id
+(In)Patient_ID , Date_of_come -> date_of_out
+
+//Realtional schema
+Ambulance(gos_nomer , patient_id , date_of_out);
+archive(archive_id, patient_id,	name,	surname,	age,	phone_number,	home_address,	gender,	diagnos_id	);
+diagnos( diagnos_id	, diagnos_name	, drug_name	 ,treatment);
+doctor( doctor_id	 , ward_id	, SCHEDULE_id	, name	, surname	, phone_number	 , gender	, age	, home_address);
+hospital( hospital_name , address);
+inpatient(patient_id	,room_id	,date_of_out,	date_of_come);
+medical_record(patient_id ,	doctor_id	,test_id);
+nurse(Nurse_id	,room_id	,SCHEDULE_id	,name	,surname,	phone_number	,gender	,age);
+operation(diagnos_id	,patient_id	,operation_name	,date	);
+outpatient(patient_id	 ,date);
+patient(patient_id	,name	,surname,	age	,phone_number	,home_address	,gender);
+registration(patient_id	,date);
+room(room_id	,num_of_beds	,ward_id);
+schedule(SCHEDULE_Id	,starttime,	endtime	,date);
+test(test_id	,patient_id	,diagnos_id	,equipment	,conclusion);
+ward(ward_id	,ward_name	,block);
