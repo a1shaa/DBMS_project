@@ -80,7 +80,9 @@ DELIMITER ;;
 //TRANSACTION
 
 START TRANSACTION; 
-    INSERT INTO patients VALUES(102 , 'Callie' , 'Stovold' , 18 ,'Female' , '743 Truax Street' , '+7 (463) 599-9466)'); 
+    	INSERT INTO patients VALUES(101 , 'Callie' , 'Stovold' , 18  , '+7 (463) 599-9466)' , '743 Truax Street' ,'Female');
+     INSERT INTO test VALUES(101 , 101, 55 , 'Cuipma' , 'Arnoglo via neck');
+     INSERT INTO medical_record VALUES(101 , 43 , 101);
 COMMIT; 
 
 //Constraints
