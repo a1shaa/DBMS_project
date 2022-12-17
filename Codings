@@ -1,64 +1,61 @@
 //QUERIES
 
-1)(select patient_ID from diagnos) 
-  intersect
-  (SELECT patient_ID FROM patients)  
+1)(select patient_ID from test) intersect (SELECT patient_ID FROM patient) 
 
-2)select inpatient.Patient_ID,wards.Ward_ID, inpatient.Room_ID, inpatient.Date_of_come, inpatient.Date_of_out, operation.Diagnos_ID, operation.Operation_Name, operation.Date, diagnos.Discription, Diagnos.Doctor_ID 
-from inpatient, operation, diagnos,rooms , wards 
-WHERE operation.Diagnos_ID = diagnos.Diagnos_ID && inpatient.Patient_ID = diagnos.Patient_ID && wards.Ward_ID = rooms.Ward_ID && rooms.Room_ID = inpatient.Room_ID;
+2)select inpatient.Patient_ID,ward.Ward_ID, inpatient.Room_ID, inpatient.Date_of_come, inpatient.Date_of_out, operation.Diagnos_ID, operation.Operation_Name, operation.Date, test.conclusion 
+from inpatient, operation, test,room , ward 
+WHERE operation.Diagnos_ID = test.Diagnos_ID && inpatient.Patient_ID = test.Patient_ID && ward.Ward_ID = room.Ward_ID && room.Room_ID = inpatient.Room_ID;
 
-3)(SELECT jobs.Job_Type FROM jobs WHERE jobs.Salary > 200000)  
-  except  
-  (SELECT nurse.Job_Type FROM nurse);
+3) SELECT doctor.Doctor_ID , doctor.Name , doctor.Surname , patient.Patient_ID,patient.Name, patient.Surname, test.Diagnos_ID, test.conclusion 
+FROM doctor , patient, test , medical_record 
+WHERE patient.Patient_ID = test.Diagnos_ID && doctor.Doctor_ID = medical_record.Doctor_ID && medical_record.test_id = test.test_id && patient.Patient_ID = 5;
 
-4)SELECT doctors.Doctor_ID , doctors.Name , doctors.Surname , patients.Patient_ID,patients.Name, patients.Surname, diagnos.Diagnos_ID, diagnos.Discription FROM
-  doctors, patients, diagnos WHERE patients.Patient_ID = diagnos.Diagnos_ID && doctors.Doctor_ID = diagnos.Doctor_ID && patients.Patient_ID = 3;
+4)select ward.Ward_ID , ward.Ward_Name , COUNT(doctor.Doctor_ID) 
+FROM doctor, ward 
+WHERE ward.Ward_ID = doctor.Ward_ID && ward.Ward_ID = 5;
 
-5)select wards.Ward_ID , wards.Ward_Name , COUNT(doctors.Doctor_ID) FROM doctors, wards  
-  WHERE wards.Ward_ID = doctors.Ward_ID && wards.Ward_ID = 5;
+5)select ward.Ward_ID, ward.Ward_Name, COUNT(*) 
+from ward, doctor
+WHERE ward.Ward_ID = doctor.Ward_ID GROUP BY Ward_Name;
 
-6)select wards.Ward_ID, wards.Ward_Name, COUNT(*)
-  from wards, doctors WHERE wards.Ward_ID = doctors.Ward_ID GROUP BY Ward_Name;
+6)SELECT * FROM doctor INNER JOIN schedule ON doctor.Schedule_ID = schedule.Schedule_ID ORDER BY doctor.Doctor_ID;
 
-7)SELECT patients.Patient_ID , patients.Name, patients.Surname, treat_normalization.Treatment_ID,treatment.Diagnos_ID, drugs.Drugs_name, drugs.Price,drugs.Company FROM patients, treat_normalization, treatment, drugs,doctors WHERE treatment.Treatment_ID = treat_normalization.Treatment_ID 
-&& treat_normalization.Patient_ID = patients.Patient_ID && treat_normalization.Doctor_ID = doctors.Doctor_ID && treatment.Drugs_name = drugs.Drugs_name && doctors.Doctor_ID = 35;
-
-8)SELECT patients.Patient_ID, medical_records.Diagnos_ID, medical_records.Doctor_ID, medical_records.Treatment_ID, medical_records.Disease_Name 
-FROM patients INNER JOIN medical_records ON patients.Patient_ID = medical_records.Patient_ID;
-
-9)SELECT * 
-  FROM doctors INNER JOIN shedule ON doctors.Shedule_ID = shedule.Shedule_ID
-  ORDER BY doctors.Doctor_ID;
-  
- 10)SELECT*
-    FROM patients
-    WHERE EXISTS (SELECT medical_records.Patient_ID FROM medical_records WHERE patients.Patient_ID = medical_records.Patient_ID);
+7) SELECT* 
+ FROM patient 
+ WHERE EXISTS (SELECT medical_record.Patient_ID FROM medical_record WHERE patient.Patient_ID = medical_record.Patient_ID);
  
-11)(SELECT treatment.Drugs_name FROM treatment)
-   UNION
-   (SELECT drugs.Drugs_name FROM drugs);
-   
-12) select wards.Ward_ID, wards.Ward_Name, COUNT(*)
-      from wards, inpatient, rooms WHERE wards.Ward_ID = rooms.Ward_ID && rooms.Room_ID = inpatient.Patient_ID GROUP BY Ward_ID;
-      
-13) SELECT AVG(patients.Age) FROM patients;
+8) select ward.Ward_ID, ward.Ward_Name, COUNT(*) 
+from ward, inpatient, room 
+WHERE ward.Ward_ID = room.Ward_ID && room.Room_ID = inpatient.Patient_ID GROUP BY Ward_ID;
 
-14)SELECT * FROM patients 
-   WHERE patients.Age < (SELECT AVG(patients.Age) FROM patients)  
-   ORDER BY `patients`.`Patient_ID` ASC;
+9) SELECT AVG(patient.Age) FROM patient;
+
+10)SELECT * FROM patient 
+   WHERE patient.Age > (SELECT AVG(patient.Age) FROM patient)  
+   ORDER BY `patient`.`Patient_ID` ASC;
    
-15) SELECT * 
-      FROM nurse INNER JOIN shedule ON nurse.Shedule_ID = shedule.Shedule_ID
-      ORDER BY nurse.Nurse_ID;
-16) SELECT * FROM doctors INNER JOIN shedule ON doctors.Shedule_ID = shedule.Shedule_ID && shedule.Day LIKE '%Tu%' ORDER BY doctors.Doctor_ID;
-17) SELECT medical_records.Disease_Name , COUNT(*) FROM medical_records GROUP BY medical_records.Disease_Name;
+11) SELECT * FROM nurse INNER JOIN schedule ON nurse.Schedule_ID = schedule.Schedule_ID ORDER BY nurse.Nurse_ID;
+
+12) SELECT * FROM doctor INNER JOIN schedule ON doctor.Schedule_ID = schedule.Schedule_ID && schedule.date LIKE '%Tu%' ORDER BY doctor.Doctor_ID;
+
 
 //TRIGGERS
 
 DELIMITER $$
 
-CREATE TRIGGER patient_archive BEFORE DELETE ON patients
+CREATE TRIGGER patient_bed AFTER INSERT ON inpatient
+ FOR EACH ROW BEGIN
+  
+    set @bed := (SELECT num_of_beds from room WHERE room.Room_ID = new.Room_ID);
+    
+    UPDATE room set num_of_beds = @bed-1 WHERE room.Room_ID = new.Room_ID;
+
+END $$
+DELIMITER ;; 
+
+DELIMITER $$
+
+CREATE TRIGGER patient_archive BEFORE DELETE ON patient
  FOR EACH ROW BEGIN
  
     SET @DOC_ID := (Select doctor_ID FROM diagnos WHERE diagnos.Patient_ID = old.Patient_ID);
@@ -70,18 +67,12 @@ END $$
 
 DELIMITER ;;
 
-
-
-
 DELIMITER $$
-
-CREATE TRIGGER patient_bed AFTER INSERT ON inpatient
- FOR EACH ROW BEGIN
-  
-    set @bed := (SELECT number_of_beds from rooms WHERE rooms.Room_ID = new.Room_ID);
-    
-    UPDATE rooms set number_of_beds = @bed-1 WHERE rooms.Room_ID = new.Room_ID;
-
+ CREATE TRIGGER change_bed BEFORE UPDATE
+   ON inpatient FOR EACH ROW
+BEGIN
+   UPDATE room SET Num_of_beds = Num_of_beds - 1 WHERE room.Room_ID = new.Room_ID;
+    UPDATE room SET Num_of_beds = Num_of_beds + 1 WHERE room.Room_ID = old.Room_ID;
 END $$
 DELIMITER ;;
 
@@ -92,11 +83,33 @@ START TRANSACTION;
     INSERT INTO patients VALUES(102 , 'Callie' , 'Stovold' , 18 ,'Female' , '743 Truax Street' , '+7 (463) 599-9466)'); 
 COMMIT; 
 
+//Constraints
+ALTER TABLE ambulance ADD CONSTRAINT ambul_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE nurse ADD CONSTRAINT nur_sch_fk FOREIGN KEY (schedule_ID) REFERENCES schedule(schedule_ID);
+ALTER TABLE nurse ADD CONSTRAINT nur_r_fk FOREIGN KEY (room_ID) REFERENCES room(room_ID);
+ALTER TABLE room ADD CONSTRAINT room_fk FOREIGN KEY (ward_ID) REFERENCES ward(ward_ID);
+ALTER TABLE registration ADD CONSTRAINT reg_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE doctor ADD CONSTRAINT doc_sch_fk FOREIGN KEY (schedule_ID) REFERENCES schedule(schedule_ID);
+ALTER TABLE doctor ADD CONSTRAINT doc_w_fk FOREIGN KEY (ward_ID) REFERENCES ward(ward_ID);
+ALTER TABLE outpatient ADD CONSTRAINT out_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE inpatient ADD CONSTRAINT in_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE inpatient ADD CONSTRAINT in_r_fk FOREIGN KEY (room_ID) REFERENCES room(room_ID);
+ALTER TABLE archive ADD CONSTRAINT arch_fk FOREIGN KEY (diagnos_ID) REFERENCES diagnos(diagnos_ID);
+ALTER TABLE test ADD CONSTRAINT test_p_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE test ADD CONSTRAINT test_fk FOREIGN KEY (diagnos_ID) REFERENCES diagnos(diagnos_ID);
+ALTER TABLE medical_record ADD CONSTRAINT medical_record_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE medical_record ADD CONSTRAINT medical_recor_fk FOREIGN KEY (doctor_id) REFERENCES doctor(doctor_ID);
+ALTER TABLE medical_record ADD CONSTRAINT medical_reco_fk FOREIGN KEY (test_id) REFERENCES test(test_ID);
+ALTER TABLE operation ADD CONSTRAINT operation_fk FOREIGN KEY (Patient_ID) REFERENCES patient(Patient_ID);
+ALTER TABLE operation ADD CONSTRAINT op_fk FOREIGN KEY (diagnos_id) REFERENCES diagnos(diagnos_ID);
+
 //VIEW
 
-CREATE VIEW busy_rooms as 
-SELECT rooms.Room_ID, rooms.Ward_ID FROM rooms, inpatient, wards  
-WHERE wards.Ward_ID = rooms.Ward_ID && rooms.Room_ID = inpatient.Room_ID; 
+CREATE VIEW empty as 
+SELECT room.num_of_beds , room.Room_ID, room.Ward_ID 
+FROM room, inpatient, ward  
+WHERE ward.Ward_ID = room.Ward_ID && room.Room_ID = inpatient.Room_ID
+group by room_id;
 
 //INDEXES
 
