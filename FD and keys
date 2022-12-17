@@ -1,0 +1,9 @@
+Doctor_ID -> name , surname , age , gender , home_address , phone_number , ward_ID , Schedule-ID
+Patient_ID , Date_of_come -> date_of_out
+Nurse_ID -> name , surname , age , gender , home_address , phone_number , room_ID , Schedule-ID , ward_ID
+Patient_ID -> date_of_arrived
+Patient_ID ->  name , surname , age , gender , home_address , phone_number
+Room_ID -> ward_ID , num_of_beds
+Schedule_ID -> day , time_start , time_end
+Ward_ID -> Ward_name  , total of rooms , block
+Test_id -> diagnos , treatment , equipment , drug
